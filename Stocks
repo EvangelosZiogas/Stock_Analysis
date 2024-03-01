@@ -1,0 +1,47 @@
+X_train, X_test, y_train, y_test = train_test_split(df[['Date']], df['Close'], test_size=0.5, random_state=10)
+lr = LinearRegression()
+lr.fit(X_train, y_train)
+
+y_pred = lr.predict(X_test)
+
+print("Linear Regression score for test data:", lr.score(X_test, y_test))
+print("Linear Regression score for train data:", lr.score(X_train, y_train))
+
+# Versuch mit DecisionTreeRegressor
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.model_selection import cross_val_score
+
+
+dt = DecisionTreeRegressor(max_depth=4)
+n_folds = 5
+
+dt_scores = cross_val_score(dt, X_train, y_train, cv=n_folds)
+dt_mean_score = dt_scores.mean()
+
+dt_test_scores = cross_val_score(dt, X_test, y_test, cv=n_folds)
+dt_test_mean_score = dt_test_scores.mean()
+
+print(f"Average Accuracy (K-Fold Cross-Validation): {dt_mean_score}")
+print(f"Average Accuracy (K-Fold Cross-Validation): {dt_test_mean_score}")
+
+
+from sklearn.preprocessing import MinMaxScaler
+from keras.models import Sequential
+from keras.layers import LSTM, Dense
+
+scaler = MinMaxScaler()
+y_train_scaled = scaler.fit_transform(y_train.values.reshape(-1, 1))
+y_test_scaled = scaler.transform(y_test.values.reshape(-1, 1))
+
+# Reshape input data for LSTM
+X_train_reshaped = X_train.values.reshape(X_train.shape[0], 1, X_train.shape[1])
+X_test_reshaped = X_test.values.reshape(X_test.shape[0], 1, X_test.shape[1])
+
+model = Sequential()
+model.add(LSTM(50, activation='relu', input_shape=(1, X_train.shape[1])))
+model.add(Dense(1))
+model.compile(optimizer='adam', loss='mse')
+
+model.fit(X_train_reshaped, y_train_scaled, epochs=10, batch_size=32, validation_data=(X_test_reshaped, y_test_scaled))
+loss = model.evaluate(X_test_reshaped, y_test_scaled)
+print(loss)
